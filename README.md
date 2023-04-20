@@ -29,16 +29,24 @@ import adata_and_scanpy_tools as adsctl
 ``` 
 ## Directory structure
 
-I recommend placing all your github repos (packages and analysis_project_repos) in the same parent directory that way you can use relative paths to access packages from your analysis_project_repos. This way the same notebook will work on your aws enviroment as as well as your local envirmoment ( without changing path variables) 
-
->github_repos
-    >adata_and_scanpy_tools
-    >another_package_repo_directory
-    >analysis_project_repo_zero
-        >analysis_project_A
-          >00_notebook
-          >01_notebook
-          >02_notebook
+I recommend placing all your github repos (packages and analysis_project_repos) in the same parent directory that way you can use relative paths to access packages from your analysis_project_repos.\
+This way the same notebook will work on your aws enviroment as as well as your local envirmoment ( without changing path variables).\
+For example adding, adding '../../' to your sys.path from any of the notebooks in the example direcotry tree below will give you access to both the adata_and_scanpy_tools and the second_favorite_package_repo_directory regardless of where the "github_repos" is located.
+> github_repos
+>> adata_and_scanpy_tools
+>> 
+>> second_favorite_package_repo_directory
+>> 
+>> singlecell_analysis_project_repo
+>>> singlecell_analysis_project_A
+>>>> 00_A_notebook\
+>>>> 01_A_notebook\
+>>>> 02_A_notebook
+>>>
+>>> singlecell_analysis_project_B
+>>>> 00_B_notebook\
+>>>> 01_B_notebook\
+>>>> 02_B_notebook
 
 
 

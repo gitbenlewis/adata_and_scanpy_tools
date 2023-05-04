@@ -1,3 +1,8 @@
+### large files
+./ingest_verbose_example_nb/data/pancreas.h5ad
+pancreas.h5ad
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -72,7 +72,7 @@ For example adding, adding '../../' to your sys.path from any of the notebooks i
 `print(adsctl.pl.silhouette_score_n_plot.__doc__)`
 
 
-### latest update is a modified version of scanpy's injest funciton
+### latest update is a modified version of scanpy's ingest funciton
 `print(adsctl.tl.ingest_verbose.__doc__)`
 
 

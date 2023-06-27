@@ -256,14 +256,15 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
         rank_genes_groups_t_test.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_t_test.csv")    
         
         
-def GSEA_enrichr_all_clusters(output_dir="./figures/",output_prefix="adata",test_library_names=['GO_Biological_Process_2021','GO_Cellular_Component_2021','GO_Molecular_Function_2021'], top_nth=10
-                                #**parameters
+def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_",
+                              test_library_names=['GO_Biological_Process_2021','GO_Cellular_Component_2021','GO_Molecular_Function_2021'], top_nth=10,n_jobs=1,
+                                **parameters
                                 ):
     """This is the doc string
     This functions take the tables produced by the MD_rank_genes(adata,output_dir,output_prefix) function and perfroms GSEA analysis using the gseapy enrichr package 
     
     default arguements:
-    GSEA_enrichr_all_clusters(
+    MD_GSEA_enrichr_all_clusters(
     output_dir="./figures/", # set this to same output_dir used for MD_rank_genes(adata,output_dir,output_prefix)
     output_prefix="adata", # set this to same output_prefix directory used for MD_rank_genes(adata,output_dir,output_prefix)
     test_library_names=['GO_Biological_Process_2021','GO_Cellular_Component_2021','GO_Molecular_Function_2021'], # pick from list below
@@ -479,18 +480,14 @@ def GSEA_enrichr_all_clusters(output_dir="./figures/",output_prefix="adata",test
     warnings.simplefilter(action='ignore', category=FutureWarning)
     ##################
 
+    sc.settings.n_jobs = int(n_jobs)
+
     os.makedirs(output_dir+output_prefix, exist_ok=True)
-
-
     os.makedirs(output_dir+output_prefix+'/tables/', exist_ok=True)
     dataset_tables_output_directory=output_dir+output_prefix+'/tables/'
-
     os.makedirs(output_dir+output_prefix+'/figures/', exist_ok=True)
     dataset_figures_output_directory=output_dir+output_prefix+'/figures/'
-
     sc.settings.figdir=dataset_figures_output_directory
-
-
     os.makedirs(output_dir+output_prefix+"/GSEA_out/", exist_ok=True)
     dataset_GESA_output_directory=output_dir+output_prefix+"/GSEA_out/"
 
@@ -520,15 +517,18 @@ def GSEA_enrichr_all_clusters(output_dir="./figures/",output_prefix="adata",test
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 foreground genes {foreground_list[:3]}, bottom 3 foreground genes {foreground_list[-3:]} ")
         # run enrichr
         # list, dataframe, series inputs are supported
-        enr = gp.enrichr(gene_list=foreground_list,
+        try:
+            enr = gp.enrichr(gene_list=foreground_list,
                          background=background_list,
                          gene_sets=test_library_names,
                          organism='Human', # don't forget to set organism to the one you desired! e.g. Yeast
-                         description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
+                         #description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
                          outdir=cluster_gsea_output_dir,
                          # no_plot=True,
                          cutoff=0.5 # test dataset, use lower value from range(0,1)
                         )
+        except Exception as e:
+            print("Something went wrong "+ str(e))
     ############################## logical regression test GSEA END
 
     ############################## wilcox regression test GSEA
@@ -546,22 +546,26 @@ def GSEA_enrichr_all_clusters(output_dir="./figures/",output_prefix="adata",test
 
         os.makedirs(dataset_GESA_output_directory+test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number), exist_ok=True)
         cluster_gsea_output_dir=dataset_GESA_output_directory+test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number)
-
+        #background_list=full_table[full_table.columns[(test_cluster_number*2)]].tolist()
         background_list=full_table[full_table.columns[(test_cluster_number*2)]].squeeze().str.strip().tolist()
+        #background_list=full_table[full_table.columns[(test_cluster_number*5)]].squeeze().str.strip().tolist()
         foreground_list=(background_list[ :int(background_list_len * top_percentile)])
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 background genes {background_list[:3]}, bottom 3 background genes {background_list[-3:]} ")
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 foreground genes {foreground_list[:3]}, bottom 3 foreground genes {foreground_list[-3:]} ")
         # run enrichr
         # list, dataframe, series inputs are supported
-        enr = gp.enrichr(gene_list=foreground_list,
-                         background=background_list,
-                         gene_sets=test_library_names,
-                         organism='Human', # don't forget to set organism to the one you desired! e.g. Yeast
-                         description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
-                         outdir=cluster_gsea_output_dir,
-                         # no_plot=True,
-                         cutoff=0.5 # test dataset, use lower value from range(0,1)
-                        )
+        try:
+            enr = gp.enrichr(gene_list=foreground_list,
+                             background=background_list,
+                             gene_sets=test_library_names,
+                             organism='Human', # don't forget to set organism to the one you desired! e.g. Yeast
+                             #description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
+                             outdir=cluster_gsea_output_dir,
+                             # no_plot=True,
+                             cutoff=0.5 # test dataset, use lower value from range(0,1)
+                            )
+        except Exception as e:
+            print("Something went wrong "+ str(e))
     ############################## wilcox regression test GSEA END
 
 
@@ -569,7 +573,7 @@ def GSEA_enrichr_all_clusters(output_dir="./figures/",output_prefix="adata",test
     test="t_test"
 
     full_table = pd.read_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_"+test+".csv",header=0,index_col=0)
-    total_cluster_number=int(len(full_table.columns)/2) # set total cluster number to column # / 2 of wilcox or t test rank table
+    total_cluster_number=int(len(full_table.columns)/2) # set total cluster number to column # / 5 of wilcox or t test rank table
     background_list_len=full_table.shape[0]
     print(f'wilcox: the full_table  is {full_table.shape[0]} genes long by {full_table.shape[1]} columns for {total_cluster_number} clusters')
     foreground_list_len=len((full_table[ :int(background_list_len * top_percentile)]))
@@ -582,20 +586,24 @@ def GSEA_enrichr_all_clusters(output_dir="./figures/",output_prefix="adata",test
         cluster_gsea_output_dir=dataset_GESA_output_directory+test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number)
 
         background_list=full_table[full_table.columns[(test_cluster_number*2)]].squeeze().str.strip().tolist()
+        #background_list=full_table[full_table.columns[(test_cluster_number*5)]].squeeze().str.strip().tolist()
         foreground_list=(background_list[ :int(background_list_len * top_percentile)])
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 background genes {background_list[:3]}, bottom 3 background genes {background_list[-3:]} ")
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 foreground genes {foreground_list[:3]}, bottom 3 foreground genes {foreground_list[-3:]} ")
         # run enrichr
         # list, dataframe, series inputs are supported
-        enr = gp.enrichr(gene_list=foreground_list,
+        try:
+                  enr = gp.enrichr(gene_list=foreground_list,
                          background=background_list,
                          gene_sets=test_library_names,
                          organism='Human', # don't forget to set organism to the one you desired! e.g. Yeast
-                         description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
+                         #description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
                          outdir=cluster_gsea_output_dir,
                          # no_plot=True,
                          cutoff=0.5 # test dataset, use lower value from range(0,1)
                         )
+        except Exception as e:
+            print("Something went wrong "+ str(e))
     ############################## t_test regression test GSEA END
     return
     

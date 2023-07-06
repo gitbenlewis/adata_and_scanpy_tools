@@ -255,6 +255,60 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
             for group in groups for key in ['names', 'pvals_adj']})
         rank_genes_groups_t_test.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_t_test.csv")    
         
+# write function for differential gene expression analysis between two groups defined by a categorical variable in adata.obs but dont use the sc.tl.rank_genes_groups function use the t-test function from scipy.stats and the statsmodels.stats.multitest.multipletests function to correct for multiple testing return a dataframe with the gene names, t-test p-value, t-test log fold change, and corrected p-value for each gene. have the function to use a specfic adata layer instead of the adata.X matrix
+def diff_exp(adata, groupby, group1, group2, layer=None):
+    """
+    Parameters
+    ----------
+    adata : AnnData object
+    groupby : str
+        The key of the observation grouping to consider.
+    group1 : str
+        The name of the first group.
+    group2 : str
+        The name of the second group.
+    layer : str, optional (default: None)
+        The key of the layer to use. If not specified, defaults to adata.X.
+    Returns
+    -------
+    A dataframe with the gene names, t-test p-value, t-test log fold change, and corrected p-value for each gene.
+    """
+    # import all the libraries need by this function above 
+    import numpy as np
+    from scipy import stats
+    from statsmodels.stats.multitest import multipletests
+    import pandas as pd
+    # remove adata rows with a  expression of 0 in all smaples
+    adata = adata[:,~np.all(adata.X == 0, axis=0)]
+    # get the data matrix
+    if layer is None:
+        X = adata.X
+    else:
+        X = adata.layers[layer]
+    
+    # get the groupby categories
+    cats = adata.obs[groupby].cat.categories
+    # get the indices of the two groups
+    idx1 = np.where(cats == group1)[0][0]
+    idx2 = np.where(cats == group2)[0][0]
+    # get the data for each group
+    data1 = X[adata.obs[groupby] == group1, :]
+    data2 = X[adata.obs[groupby] == group2, :]
+    # get the p-values and log fold changes for each gene
+    pvals = []
+    logfc = []
+    for i in range(data1.shape[1]):
+        pvals.append(stats.ttest_ind(data1[:, i], data2[:, i])[1])
+        #logfc.append(np.log2(np.mean(data1[:, i])) - np.log2(np.mean(data2[:, i])))
+        logfc.append(np.log2(np.mean(data1[:, i]) / (np.mean(data2[:, i]))))
+    # correct for multiple testing
+    reject, pvals_corrected, _, _ = multipletests(pvals, method='fdr_bh')
+    # return a dataframe with the results
+    return pd.DataFrame({'gene': adata.var_names,
+                         'pvals': pvals,
+                         'pvals_corrected': pvals_corrected,
+                         'logfc': logfc})
+
         
 def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_",
                               test_library_names=['GO_Biological_Process_2021','GO_Cellular_Component_2021','GO_Molecular_Function_2021'], top_nth=10,n_jobs=1,

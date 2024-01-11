@@ -99,7 +99,8 @@ def ann_cells_4_marker_gene(adata,gene_names,min_n_counts=0,obs_key='cell_pos'):
     return adata
 
 
-def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",wilcox=True,logreg=True,t_test=True,rank_use_raw=True,obs_key="leiden",n_jobs=8,#**parameters
+def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",
+               wilcox=True,logreg=True,t_test=True,rank_use_raw=True,obs_key="leiden",n_jobs=1,**parameters
                  ):
     """
     rank_genes(
@@ -110,6 +111,7 @@ def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",wilcox=
     rank_use_raw=True, # if set to false only uses the highly varrible genes 
     obs_key="leiden", adata.obs key to use to find differentially expressed genes
     n_jobs=8 # number of threads
+    returns rank_genes_groups_wilcox, rank_genes_groups_logreg,rank_genes_groups_t_test
     )
     """
     import os
@@ -119,43 +121,41 @@ def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",wilcox=
     sc.settings.verbosity = 1             # verbosity: errors (0), warnings (1), info (2), hints (3)
     sc.logging.print_header()
     sc.settings.set_figure_params(dpi=80, facecolor='white')
-    sc.settings.n_jobs = n_jobs  
-    
+    sc.settings.n_jobs = int(n_jobs)  
     os.makedirs(output_dir+output_prefix, exist_ok=True)
-    
-    
     os.makedirs(output_dir+output_prefix+'/tables/', exist_ok=True)
     dataset_tables_output_directory=output_dir+output_prefix+'/tables/'
-    
     os.makedirs(output_dir+output_prefix+'/figures/', exist_ok=True)
     dataset_figures_output_directory=output_dir+output_prefix+'/figures/'
 
     sc.settings.figdir=dataset_figures_output_directory
-    
+    rank_genes_groups_wilcox=pd.DataFrame()
+    rank_genes_groups_logreg=pd.DataFrame()
+    rank_genes_groups_t_test=pd.DataFrame()
     #bug work around found on github
     #needed for next cell to run
     adata.uns['log1p']["base"] = None
     if wilcox==True:
         #########################  Wilcox
-        sc.tl.rank_genes_groups(adata, obs_key, method='wilcoxon', use_raw=rank_use_raw)
-        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,
+        sc.tl.rank_genes_groups(adata, obs_key, method='wilcoxon', use_raw=rank_use_raw, key_added='wilcoxon')
+        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, key='wilcoxon',
                                 save=output_prefix+'wilcoxon_topgenes.pdf')
 
-        result = adata.uns['rank_genes_groups']
+        result = adata.uns['wilcoxon']
         groups = result['names'].dtype.names
         rank_genes_groups_wilcox=pd.DataFrame(
-            {group + '_' + key[:1]: result[key][group]
-            for group in groups for key in ['names', 'pvals_adj']})
+            {group + '_' + key[:16]: result[key][group]
+            for group in groups for key in ['names', 'scores','pvals','pvals_adj','logfoldchanges']})
         rank_genes_groups_wilcox.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_wilcox.csv")
 
         #########################  Wilcox
     if logreg==True:
         #########################  logical reggression
-        sc.tl.rank_genes_groups(adata, obs_key, method='logreg',use_raw=rank_use_raw)
-        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,
-                                save=output_prefix+'logreg_topgenes.pdf')
+        sc.tl.rank_genes_groups(adata, obs_key, method='logreg',use_raw=rank_use_raw, key_added='logreg')
+        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, key='logreg',
+                                save=output_prefix+'logreg_topgenes.pdf' )
 
-        rank_genes_groups_logreg=pd.DataFrame(adata.uns['rank_genes_groups']['names'])
+        rank_genes_groups_logreg=pd.DataFrame(adata.uns['logreg']['names'])
 
         rank_genes_groups_logreg.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_logreg.csv")
 
@@ -163,20 +163,21 @@ def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",wilcox=
 
     if t_test==True:                                
         ######################### t-test
-        sc.tl.rank_genes_groups(adata, obs_key, method='t-test',use_raw=rank_use_raw)
-        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,
+        sc.tl.rank_genes_groups(adata, obs_key, method='t-test',use_raw=rank_use_raw, key_added='t-test')
+        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,key='t-test',
                                save=output_prefix+'t_test_topgenes.pdf')
-        result = adata.uns['rank_genes_groups']
+        result = adata.uns['t-test']
         groups = result['names'].dtype.names
         rank_genes_groups_t_test=pd.DataFrame(
-            {group + '_' + key[:1]: result[key][group]
-            for group in groups for key in ['names', 'pvals_adj']})
+            {group + '_' + key[:16]: result[key][group]
+            for group in groups for key in ['names', 'scores','pvals','pvals_adj','logfoldchanges']})
         rank_genes_groups_t_test.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_t_test.csv")         
          ######################### t-test
+    return rank_genes_groups_wilcox, rank_genes_groups_logreg,rank_genes_groups_t_test
             
-def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_prefix="adata_",wilcox=True,logreg=True,t_test=True,rank_use_raw=True,n_jobs=8,
-                                  obs_key="leiden",obscat1='0',obscat2='1'
-                                   # **parameters
+def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_prefix="adata_",wilcox=True,logreg=True,t_test=True,rank_use_raw=True,n_jobs=1,
+                                  obs_key="leiden",obscat1='0',obscat2='1',
+                                    **parameters
                                     ):
     """
     rank_genes_obscat1_vs_obscat2(
@@ -189,6 +190,7 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
     obs_key="leiden", adata.obs key to use to find differentially expressed genes
     obscat1='0' # diffenretioally expressed genes in adata[obs_key]=obscat1 vs adata[obs_key]=obscat2
     obscat2='1'
+    returns rank_genes_groups_wilcox, rank_genes_groups_logreg,rank_genes_groups_t_test   
     )
     """
     import os
@@ -198,7 +200,7 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
     sc.settings.verbosity = 1             # verbosity: errors (0), warnings (1), info (2), hints (3)
     sc.logging.print_header()
     sc.settings.set_figure_params(dpi=80, facecolor='white')
-    sc.settings.n_jobs = n_jobs  
+    sc.settings.n_jobs = int(n_jobs)  
 
     os.makedirs(output_dir+output_prefix, exist_ok=True)
 
@@ -210,33 +212,35 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
     dataset_figures_output_directory=output_dir+output_prefix+'/figures/'
 
     sc.settings.figdir=dataset_figures_output_directory
-
+    rank_genes_groups_wilcox=pd.DataFrame()
+    rank_genes_groups_logreg=pd.DataFrame()
+    rank_genes_groups_t_test=pd.DataFrame()
     #bug work around found on github
     #needed for next cell to run
     adata.uns['log1p']["base"] = None
     if wilcox==True:
         #########################  Wilcox
-        sc.tl.rank_genes_groups(adata,obs_key, groups=[obscat1], reference=obscat2, method='wilcoxon', use_raw=rank_use_raw)
+        sc.tl.rank_genes_groups(adata,obs_key, groups=[obscat1], reference=obscat2, method='wilcoxon', use_raw=rank_use_raw, key_added=f'wilcoxon_{obscat1}_ref_{obscat2}')
         #sc.tl.rank_genes_groups(adata, obs_key, method='wilcoxon', use_raw=rank_use_raw)
-        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,
+        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,key=f'wilcoxon_{obscat1}_ref_{obscat2}',
                                 save=output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+'wilcoxon_topgenes.pdf')
 
-        result = adata.uns['rank_genes_groups']
+        result = adata.uns[f'wilcoxon_{obscat1}_ref_{obscat2}']
         groups = result['names'].dtype.names
         rank_genes_groups_wilcox=pd.DataFrame(
-            {group + '_' + key[:1]: result[key][group]
-            for group in groups for key in ['names', 'pvals_adj']})
+            {group + '_' + key[:16]: result[key][group]
+            for group in groups for key in ['names', 'scores','pvals','pvals_adj','logfoldchanges']})
         rank_genes_groups_wilcox.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_wilcox.csv")
 
         #########################  Wilcox
     if logreg==True:
         #########################  logical reggression
-        sc.tl.rank_genes_groups(adata,obs_key, groups=[obscat1], reference=obscat2, method='logreg', use_raw=rank_use_raw)
+        sc.tl.rank_genes_groups(adata,obs_key, groups=[obscat1], reference=obscat2, method='logreg', use_raw=rank_use_raw, key_added=f'logreg_{obscat1}_ref_{obscat2}')
        # sc.tl.rank_genes_groups(adata, obs_key, method='logreg',use_raw=rank_use_raw)
-        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,
+        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, key=f'logreg_{obscat1}_ref_{obscat2}',
                                 save=output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+'logreg_topgenes.pdf')
 
-        rank_genes_groups_logreg=pd.DataFrame(adata.uns['rank_genes_groups']['names'])
+        rank_genes_groups_logreg=pd.DataFrame(adata.uns[f'logreg_{obscat1}_ref_{obscat2}']['names'])
 
         rank_genes_groups_logreg.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_logreg.csv")
 
@@ -244,17 +248,19 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
 
     if t_test==True:                                
         ######################### t-test
-        sc.tl.rank_genes_groups(adata,obs_key, groups=[obscat1], reference=obscat2, method='t-test', use_raw=rank_use_raw)
+        sc.tl.rank_genes_groups(adata,obs_key, groups=[obscat1], reference=obscat2, method='t-test', use_raw=rank_use_raw, key_added=f't-test_{obscat1}_ref_{obscat2}')
         #sc.tl.rank_genes_groups(adata, obs_key, method='t-test',use_raw=rank_use_raw)
-        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,
+        sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, key=f't-test_{obscat1}_ref_{obscat2}',
                                save=output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+'t_test_topgenes.pdf')
-        result = adata.uns['rank_genes_groups']
+        result = adata.uns[f't-test_{obscat1}_ref_{obscat2}']
         groups = result['names'].dtype.names
         rank_genes_groups_t_test=pd.DataFrame(
-            {group + '_' + key[:1]: result[key][group]
-            for group in groups for key in ['names', 'pvals_adj']})
+            {group + '_' + key[:16]: result[key][group]
+            for group in groups for key in ['names', 'scores','pvals','pvals_adj','logfoldchanges']})
         rank_genes_groups_t_test.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_t_test.csv")    
-        
+    return rank_genes_groups_wilcox, rank_genes_groups_logreg,rank_genes_groups_t_test    
+
+
 # write function for differential gene expression analysis between two groups defined by a categorical variable in adata.obs but dont use the sc.tl.rank_genes_groups function use the t-test function from scipy.stats and the statsmodels.stats.multitest.multipletests function to correct for multiple testing return a dataframe with the gene names, t-test p-value, t-test log fold change, and corrected p-value for each gene. have the function to use a specfic adata layer instead of the adata.X matrix
 def diff_exp(adata, groupby, group1, group2, layer=None):
     """
@@ -309,7 +315,8 @@ def diff_exp(adata, groupby, group1, group2, layer=None):
                          'pvals_corrected': pvals_corrected,
                          'logfc': logfc})
 
-        
+
+
 def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_",
                               test_library_names=['GO_Biological_Process_2021','GO_Cellular_Component_2021','GO_Molecular_Function_2021'], top_nth=10,n_jobs=1,
                                 **parameters
@@ -579,7 +586,7 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
                          #description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
                          outdir=cluster_gsea_output_dir,
                          # no_plot=True,
-                         cutoff=0.5 # test dataset, use lower value from range(0,1)
+                         cutoff=1 # test dataset, use lower value from range(0,1)
                         )
         except Exception as e:
             print("Something went wrong "+ str(e))
@@ -589,7 +596,7 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
     test="wilcox"
 
     full_table = pd.read_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_"+test+".csv",header=0,index_col=0)
-    total_cluster_number=int(len(full_table.columns)/2) # set total cluster number to column # / 2 of wilcox or t test rank table
+    total_cluster_number=int(len(full_table.columns)/5) # set total cluster number to column # / 4 of wilcox or t test rank table
     background_list_len=full_table.shape[0]
     print(f'wilcox: the full_table  is {full_table.shape[0]} genes long by {full_table.shape[1]} columns for {total_cluster_number} clusters')
     foreground_list_len=len((full_table[ :int(background_list_len * top_percentile)]))
@@ -601,8 +608,10 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
         os.makedirs(dataset_GESA_output_directory+test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number), exist_ok=True)
         cluster_gsea_output_dir=dataset_GESA_output_directory+test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number)
         #background_list=full_table[full_table.columns[(test_cluster_number*2)]].tolist()
-        background_list=full_table[full_table.columns[(test_cluster_number*2)]].squeeze().str.strip().tolist()
+        #background_list=full_table[full_table.columns[(test_cluster_number*2)]].squeeze().str.strip().tolist()
         #background_list=full_table[full_table.columns[(test_cluster_number*5)]].squeeze().str.strip().tolist()
+        #background_list=full_table[full_table.columns[(test_cluster_number*5)]].tolist()
+        background_list=full_table[full_table.columns[(test_cluster_number*5)]].squeeze().str.strip().tolist()
         foreground_list=(background_list[ :int(background_list_len * top_percentile)])
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 background genes {background_list[:3]}, bottom 3 background genes {background_list[-3:]} ")
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 foreground genes {foreground_list[:3]}, bottom 3 foreground genes {foreground_list[-3:]} ")
@@ -616,7 +625,7 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
                              #description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
                              outdir=cluster_gsea_output_dir,
                              # no_plot=True,
-                             cutoff=0.5 # test dataset, use lower value from range(0,1)
+                             cutoff=1 # test dataset, use lower value from range(0,1)
                             )
         except Exception as e:
             print("Something went wrong "+ str(e))
@@ -627,7 +636,7 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
     test="t_test"
 
     full_table = pd.read_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_"+test+".csv",header=0,index_col=0)
-    total_cluster_number=int(len(full_table.columns)/2) # set total cluster number to column # / 5 of wilcox or t test rank table
+    total_cluster_number=int(len(full_table.columns)/5) # set total cluster number to column # / 5 of wilcox or t test rank table
     background_list_len=full_table.shape[0]
     print(f'wilcox: the full_table  is {full_table.shape[0]} genes long by {full_table.shape[1]} columns for {total_cluster_number} clusters')
     foreground_list_len=len((full_table[ :int(background_list_len * top_percentile)]))
@@ -639,8 +648,8 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
         os.makedirs(dataset_GESA_output_directory+test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number), exist_ok=True)
         cluster_gsea_output_dir=dataset_GESA_output_directory+test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number)
 
-        background_list=full_table[full_table.columns[(test_cluster_number*2)]].squeeze().str.strip().tolist()
-        #background_list=full_table[full_table.columns[(test_cluster_number*5)]].squeeze().str.strip().tolist()
+        #background_list=full_table[full_table.columns[(test_cluster_number*2)]].squeeze().str.strip().tolist()
+        background_list=full_table[full_table.columns[(test_cluster_number*5)]].squeeze().str.strip().tolist()
         foreground_list=(background_list[ :int(background_list_len * top_percentile)])
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 background genes {background_list[:3]}, bottom 3 background genes {background_list[-3:]} ")
         print(f"<CLUSTER {test_cluster_number}> for {test} gene rank top 3 foreground genes {foreground_list[:3]}, bottom 3 foreground genes {foreground_list[-3:]} ")
@@ -654,10 +663,11 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
                          #description=test+"_top_"+str(top_nth)+"pct_"+"cluster_"+str(test_cluster_number),
                          outdir=cluster_gsea_output_dir,
                          # no_plot=True,
-                         cutoff=0.5 # test dataset, use lower value from range(0,1)
+                         cutoff=1 # test dataset, use lower value from range(0,1)
                         )
         except Exception as e:
             print("Something went wrong "+ str(e))
     ############################## t_test regression test GSEA END
     return
+    
     

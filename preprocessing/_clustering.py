@@ -20,9 +20,9 @@ def leiden_clustering(adata, number_of_neighbors=10,number_of_PC=40, leiden_res=
     return
 
 
-def rename_leiden_clusters(adata,rename_cluster=False,new_cluster_names=None,new_obs_key='leiden_renamed', **parameters):
+def rename_leiden_clusters(adata,rename_cluster=False,new_cluster_names=None,new_obs_key='Cell_Clusters', **parameters):
     '''
-    rename_leiden_clusters(adata,parameters=None,rename_cluster=False,new_cluster_names=None,new_obs_key='leiden_renamed'):
+    rename_leiden_clusters(adata,parameters=None,rename_cluster=False,new_cluster_names=None,new_obs_key='Cell_Clusters'):
     '''
 
     ##################### cluster remnameing 

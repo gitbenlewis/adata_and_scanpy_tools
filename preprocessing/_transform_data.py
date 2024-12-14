@@ -122,14 +122,15 @@ def norm_log(adata,normalize_total_target_sum=1e4, logarithmize=True, **paramete
     adata.layers["counts"] = adata.X.copy()  # preserve counts
     print(f'####################################################  library-size correct  the data  target_sum= {normalize_total_target_sum}')
     ################################## library-size correct  the data:
-    sc.pp.normalize_total(adata, target_sum=normalize_total_target_sum)    
+    sc.pp.normalize_total(adata, target_sum=normalize_total_target_sum)
+    adata.raw = adata.copy()    #### save normalized counts to adata.raw before  logarithmize    
     if logarithmize==True:
         print(f'####################################################  Logarithmize  the data')
         print(f'############################# to adata.raw save filtered, normalized and logarithmized gene expression and plot')
         sc.pp.log1p(adata)
     else:
          print(f'############################# to adata.raw save filtered and normalized gene expression and plot')
-    adata.raw = adata
+    
     return adata
 
 

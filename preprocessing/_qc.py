@@ -7,24 +7,40 @@ import matplotlib.pyplot as plt
 
 
 ### annotate_QC_genes and calculate_qc_metrics functions
-def annotate_QC_genes(adata):
+def annotate_QC_genes(adata,organism = 'human' ,**parameters):
     """ 
     annotate the group of QC genes
     ### double HB gene annoation works.... maybe just give it a list of genes
     #### code 
-    adata.var['mt'] = adata.var_names.str.startswith("MT-")  # mitochondrial genes as 'mt'
-    adata.var['ribo'] = adata.var_names.str.startswith(("RPS","RPL")) # ribosomal genes genes as 'ribo'
-    adata.var['hb'] = adata.var_names.str.contains(("^HB[^(P)(S)]")) & ~adata.var_names.str.contains(("HBEGF")) 
-    # "^HB[^(P)" changed to "^HB[^(P)(S)" and  & ~adata_test.var_names.str.contains(("HBEGF")) added to remove HBS1L and HBEGF which are NOT memoglobin genes
-    adata.var['malat1'] = adata.var_names.str.contains(("MALAT1"))  # MALAT1 genes as 'malat1'
-    return adata
+    if organism == 'human' or None:
+        print ('organism is human, annotating human genes')
+        adata.var['mt'] = adata.var_names.str.startswith("MT-")  # mitochondrial genes as 'mt'
+        adata.var['ribo'] = adata.var_names.str.startswith(("RPS","RPL")) # ribosomal genes genes as 'ribo'
+        adata.var['hb'] = adata.var_names.str.contains(("^HB[^(P)(S)]")) & ~adata.var_names.str.contains(("HBEGF")) 
+        # "^HB[^(P)" changed to "^HB[^(P)(S)" and  & ~adata_test.var_names.str.contains(("HBEGF")) added to remove HBS1L and HBEGF which are NOT memoglobin genes
+        adata.var['malat1'] = adata.var_names.str.contains(("MALAT1"))  # MALAT1 genes as 'malat1'
+    if organism == 'mouse':
+        print ('organism is mouse, annotating mouse genes')
+        adata.var['mt'] = adata.var_names.str.startswith("mt-")  # mitochondrial genes as 'mt'
+        adata.var['ribo'] = adata.var_names.str.startswith(("Rps","Rpl")) # ribosomal genes genes as 'ribo'
+        adata.var['hb'] = adata.var_names.str.contains(("^Hb[^(P)(S)]")) & ~adata.var_names.str.contains(("Hbegf"))
+        adata.var['malat1'] = adata.var_names.str.contains(("Malat1"))  # MALAT1 genes as 'malat1'
+    return
     """
-    adata.var['mt'] = adata.var_names.str.startswith("MT-")  # mitochondrial genes as 'mt'
-    adata.var['ribo'] = adata.var_names.str.startswith(("RPS","RPL")) # ribosomal genes genes as 'ribo'
-    adata.var['hb'] = adata.var_names.str.contains(("^HB[^(P)(S)]")) & ~adata.var_names.str.contains(("HBEGF")) 
-    # "^HB[^(P)" changed to "^HB[^(P)(S)" and  & ~adata_test.var_names.str.contains(("HBEGF")) added to remove HBS1L and HBEGF which are NOT memoglobin genes
-    adata.var['malat1'] = adata.var_names.str.contains(("MALAT1"))  # MALAT1 genes as 'malat1'
-    return adata
+    if organism == 'human' or None:
+        print ('organism is human, annotating human genes')
+        adata.var['mt'] = adata.var_names.str.startswith("MT-")  # mitochondrial genes as 'mt'
+        adata.var['ribo'] = adata.var_names.str.startswith(("RPS","RPL")) # ribosomal genes genes as 'ribo'
+        adata.var['hb'] = adata.var_names.str.contains(("^HB[^(P)(S)]")) & ~adata.var_names.str.contains(("HBEGF")) 
+        # "^HB[^(P)" changed to "^HB[^(P)(S)" and  & ~adata_test.var_names.str.contains(("HBEGF")) added to remove HBS1L and HBEGF which are NOT memoglobin genes
+        adata.var['malat1'] = adata.var_names.str.contains(("MALAT1"))  # MALAT1 genes as 'malat1'
+    if organism == 'mouse':
+        print ('organism is mouse, annotating mouse genes')
+        adata.var['mt'] = adata.var_names.str.startswith("mt-")  # mitochondrial genes as 'mt'
+        adata.var['ribo'] = adata.var_names.str.startswith(("Rps","Rpl")) # ribosomal genes genes as 'ribo'
+        adata.var['hb'] = adata.var_names.str.contains(("^Hb[^(P)(S)]")) & ~adata.var_names.str.contains(("Hbegf"))
+        adata.var['malat1'] = adata.var_names.str.contains(("Malat1"))  # MALAT1 genes as 'malat1'
+    return 
 
 def calculate_qc_metrics(adata):
     """ 
@@ -35,13 +51,14 @@ def calculate_qc_metrics(adata):
     sc.pp.calculate_qc_metrics(adata, qc_vars=['ribo'], percent_top=None, log1p=False, inplace=True) # ribosomal genes
     sc.pp.calculate_qc_metrics(adata, qc_vars=['hb'], percent_top=None, log1p=False, inplace=True) # hemoglobin genes.
     sc.pp.calculate_qc_metrics(adata, qc_vars=['malat1'], percent_top=None, log1p=False, inplace=True) # MALAT1 gene.
-    return adata
+    return 
     """
-    sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True) # mitocohndrial  genes
-    sc.pp.calculate_qc_metrics(adata, qc_vars=['ribo'], percent_top=None, log1p=False, inplace=True) # ribosomal genes
-    sc.pp.calculate_qc_metrics(adata, qc_vars=['hb'], percent_top=None, log1p=False, inplace=True) # hemoglobin genes.
-    sc.pp.calculate_qc_metrics(adata, qc_vars=['malat1'], percent_top=None, log1p=False, inplace=True) # MALAT1 gene.
-    return adata
+    #sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True) # mitocohndrial  genes
+    #sc.pp.calculate_qc_metrics(adata, qc_vars=['ribo'], percent_top=None, log1p=False, inplace=True) # ribosomal genes
+    #sc.pp.calculate_qc_metrics(adata, qc_vars=['hb'], percent_top=None, log1p=False, inplace=True) # hemoglobin genes.
+    #sc.pp.calculate_qc_metrics(adata, qc_vars=['malat1'], percent_top=None, log1p=False, inplace=True) # MALAT1 gene.
+    sc.pp.calculate_qc_metrics( adata, qc_vars=["mt", "ribo", "hb",'malat1'],percent_top=None, inplace=True, log1p=False) # mitocohndrial,ribosomal,hemoglobin,MALAT1  genes
+    return 
 
 ### annotate_QC_genes and MD_calculate_qc_metrics functions END
 
@@ -106,7 +123,7 @@ def plot_qc_metrics(adata):
 
 ### multi funcitons 
     
-def annotate_n_view_adata_raw_counts(adata):
+def annotate_n_view_adata_raw_counts(adata,**parameters):
     """  
     Annotate technical gene groups  and calculate qc metrics
     #### code 
@@ -114,10 +131,10 @@ def annotate_n_view_adata_raw_counts(adata):
     calculate_qc_metrics(adata)
     plot_qc_metrics(adata)
     """
-    adata=annotate_QC_genes(adata)
-    adata=calculate_qc_metrics(adata)
+    annotate_QC_genes(adata,**parameters)
+    calculate_qc_metrics(adata)
     plot_qc_metrics(adata) 
-    return adata
+    return 
 
 ### multi funcitons END 
 
@@ -149,14 +166,14 @@ def basic_filitering(adata,
     print(f'Filtering genes pp.filter_genes(adata, min_cells=filter_genes_min_cells)  Genes remaining : {adata.n_vars}')
     sc.pp.filter_genes(adata, min_counts=filter_genes_min_counts ) #genes must have min # of counts for gene to be kept
     print(f'Filtering genes pp.filter_genes(adata, min_cells=filter_genes_min_counts)  Genes remaining :  {adata.n_vars}')
-    return adata
+    
         
     """
     print(f'number of Cells BEFORE Basic Filtering : {adata.n_obs}')
     sc.pp.filter_cells(adata, min_genes=filter_cells_min_genes)  #min_genes=over_n_genes_bycounts
     print(f'Filtering cells pp.filter_cells(adata, min_cells=filter_cells_min_genes)  Cells remaining : {adata.n_obs}')
     print(f'min_cells=filter_cells_min_genes = ', filter_cells_min_genes )
-    sc.pp.filter_cells(adata,min_counts=filter_cells_min_counts)  # cells / observations must have min # of coutns
+    sc.pp.filter_cells(adata,min_counts=filter_cells_min_counts)  # blob:vscode-webview://0u0ee01ocem66lh0f6iv38q91fv5oefgtqfcfp0erindjr0nlt15/38da57ab-a0fb-4ac4-b82c-7af52ba03531cells / observations must have min # of coutns
     print(f'Filtering cells pp.filter_cells(adata, min_cells=filter_cells_min_counts)  Cells remaining : {adata.n_obs}')
     print(f'min_counts=filter_cells_min_counts = ',filter_cells_min_counts )
     print(f'number of GENES BEFORE Basic Filtering : {adata.n_vars}')

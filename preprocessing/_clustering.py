@@ -20,9 +20,9 @@ def leiden_clustering(adata, number_of_neighbors=10,number_of_PC=40, leiden_res=
     return
 
 
-def rename_leiden_clusters(adata,rename_cluster=False,new_cluster_names=None,new_obs_key='Cell_Clusters', **parameters):
+def rename_leiden_clusters_old(adata,rename_cluster=False,new_cluster_names=None,new_obs_key='Cell_Clusters', **parameters):
     '''
-    rename_leiden_clusters(adata,parameters=None,rename_cluster=False,new_cluster_names=None,new_obs_key='Cell_Clusters'):
+    rename_leiden_clusters_old(adata,parameters=None,rename_cluster=False,new_cluster_names=None,new_obs_key='Cell_Clusters'):
     '''
 
     ##################### cluster remnameing 
@@ -33,6 +33,26 @@ def rename_leiden_clusters(adata,rename_cluster=False,new_cluster_names=None,new
             adata.rename_categories(new_obs_key, new_cluster_names)
     ##################### cluster remnameing #####END
     return
+
+def rename_leiden_clusters(adata,rename_cluster=False,new_cluster_names=None,new_obs_key='Cell_Clusters_Named',
+                           reorder_cluster_names=False,new_cluster_names_order=None, **parameters):
+    '''
+    rename_leiden_clusters_old(adata,parameters=None,rename_cluster=False,new_cluster_names=None,new_obs_key='Cell_Clusters_Named'):
+    '''
+
+    ##################### cluster remnameing 
+    if rename_cluster==True:
+        leiden_number_list=adata.obs['leiden'].value_counts().index.tolist()
+        #new_cluster_names=adata.uns["parameters"]['new_cluster_names']
+        ## make a dictionary from leiden_number_list and new_cluster_names_list
+        cluster_name_dict=dict(zip(leiden_number_list,new_cluster_names))
+        adata.obs[new_obs_key]=adata.obs['leiden']
+        adata.obs[new_obs_key] = adata.obs[new_obs_key].map(cluster_name_dict).fillna('Unknown').astype('category')
+        if reorder_cluster_names:
+            adata.obs[new_obs_key] = adata.obs[new_obs_key].cat.reorder_categories(new_cluster_names_order, ordered=True)
+    ##################### cluster remnameing #####END
+    return
+
 
     
 

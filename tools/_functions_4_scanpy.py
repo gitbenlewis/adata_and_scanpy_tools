@@ -74,32 +74,47 @@ def cef_to_adata(data_dir,data_prefix,n_obs=0,n_skiprows=2,cef_delimiter_tab=Tru
         ######################################### save adata object  to .h5ad file in same directory END
     
     return adata
+
+
 ####################################### add better doc string here  and make example in note book
-def ann_cells_4_marker_gene(adata,gene_names,min_n_counts=0,obs_key='cell_pos'):
-    #make true false array with demensions cells x genes
-    #gene_names=["TH","EN1",'PITX3','PITX2',
+def annotate_marker_genes(adata,gene_names,min_n_counts=None,obs_key='marker_genes'):
+    '''
+    annotate cells with marker genes
+    adata: anndata object
+    gene_names: list of gene names
+    min_n_counts: list of min number of counts for each gene
+    obs_key: name of obs key to store results
+    greater than min_n_counts not greater or equal to
+    # adata.raw.to_adata()[:,gene_names[0]].X.toarray()>min_n_counts[0]
+    '''
     import numpy as np
-    cell_gene_array_all=adata.raw.to_adata()[:,gene_names[0]].X.toarray()>min_n_counts
-    for gene in gene_names[1:]:
-        cell_gene_array_all=np.hstack((cell_gene_array_all,(adata.raw.to_adata()[:,gene].X.toarray()>min_n_counts)))
-    #make list of names for each combiantion of results
+    #make true false array with demensions cells x genes
+    # if min_n_counts is None: set all to 0
+    if min_n_counts is None:
+        min_n_counts = [0 for i in range(len(gene_names))]
+    # evaluate first gene for true false array for each cell
+    cell_gene_array_all=adata.raw.to_adata()[:,gene_names[0]].X.toarray()>min_n_counts[0]
+    # loop through remaining genes and add to array
+    for count, gene in enumerate(gene_names[1:]):
+        cell_gene_array_all=np.hstack((cell_gene_array_all,(adata.raw.to_adata()[:,gene].X.toarray()>min_n_counts[count+1])))
+    # for each cell or row in the true false array replace the True values with the corresponding gene name
+    # make a single underscore sperated string Gene1_Gene2_Gene3 
     cell_pos_result=[]
-    for row in range(cell_gene_array_all.shape[0]):
-        #print(cell_gene_array_all[row])
-        row_result=''
-        for col in range(cell_gene_array_all.shape[1]):
-            if cell_gene_array_all[row][col]==True:
-                row_result=row_result+'_'+gene_names[col]     
-        #print(row_result)
-        if row_result=='':
-            row_result="All-neagtive"
-        cell_pos_result.append(row_result.strip("_"))  
+    for row in range(cell_gene_array_all.shape[0]): # for each cell
+        row_result=""
+        if cell_gene_array_all[row,:].any()==False: 
+            row_result="All-negative"
+        else:
+            list_of_pos_genes=[gene_names[idx] for (idx, bol) in enumerate(cell_gene_array_all[row,:]) if bol]
+            row_result="_".join(list_of_pos_genes)# make a single underscore sperated string Gene1_Gene2_Gene3 
+        cell_pos_result.append(row_result)
     adata.obs[obs_key]=cell_pos_result
     adata.obs[obs_key]=adata.obs[obs_key].astype('category')
     return adata
 
 
-def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",
+
+def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",save_output=True,
                wilcox=True,logreg=True,t_test=True,rank_use_raw=True,obs_key="leiden",n_jobs=1,**parameters
                  ):
     """
@@ -146,7 +161,8 @@ def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",
         rank_genes_groups_wilcox=pd.DataFrame(
             {group + '_' + key[:16]: result[key][group]
             for group in groups for key in ['names', 'scores','pvals','pvals_adj','logfoldchanges']})
-        rank_genes_groups_wilcox.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_wilcox.csv")
+        if save_output:
+            rank_genes_groups_wilcox.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_wilcox.csv")
 
         #########################  Wilcox
     if logreg==True:
@@ -154,10 +170,9 @@ def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",
         sc.tl.rank_genes_groups(adata, obs_key, method='logreg',use_raw=rank_use_raw, key_added='logreg')
         sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, key='logreg',
                                 save=output_prefix+'logreg_topgenes.pdf' )
-
         rank_genes_groups_logreg=pd.DataFrame(adata.uns['logreg']['names'])
-
-        rank_genes_groups_logreg.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_logreg.csv")
+        if save_output:
+            rank_genes_groups_logreg.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_logreg.csv")
 
         #########################  logical reggression
 
@@ -171,11 +186,12 @@ def rank_genes(adata,output_dir="./adata_output/",output_prefix="adata_",
         rank_genes_groups_t_test=pd.DataFrame(
             {group + '_' + key[:16]: result[key][group]
             for group in groups for key in ['names', 'scores','pvals','pvals_adj','logfoldchanges']})
-        rank_genes_groups_t_test.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_t_test.csv")         
+        if save_output:
+            rank_genes_groups_t_test.to_csv(dataset_tables_output_directory+output_prefix+"rank_genes_groups_t_test.csv")         
          ######################### t-test
     return rank_genes_groups_wilcox, rank_genes_groups_logreg,rank_genes_groups_t_test
             
-def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_prefix="adata_",wilcox=True,logreg=True,t_test=True,rank_use_raw=True,n_jobs=1,
+def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_prefix="adata_",save_output=True,wilcox=True,logreg=True,t_test=True,rank_use_raw=True,n_jobs=1,
                                   obs_key="leiden",obscat1='0',obscat2='1',
                                     **parameters
                                     ):
@@ -230,7 +246,8 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
         rank_genes_groups_wilcox=pd.DataFrame(
             {group + '_' + key[:16]: result[key][group]
             for group in groups for key in ['names', 'scores','pvals','pvals_adj','logfoldchanges']})
-        rank_genes_groups_wilcox.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_wilcox.csv")
+        if save_output:
+            rank_genes_groups_wilcox.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_wilcox.csv")
 
         #########################  Wilcox
     if logreg==True:
@@ -239,10 +256,9 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
        # sc.tl.rank_genes_groups(adata, obs_key, method='logreg',use_raw=rank_use_raw)
         sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, key=f'logreg_{obscat1}_ref_{obscat2}',
                                 save=output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+'logreg_topgenes.pdf')
-
         rank_genes_groups_logreg=pd.DataFrame(adata.uns[f'logreg_{obscat1}_ref_{obscat2}']['names'])
-
-        rank_genes_groups_logreg.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_logreg.csv")
+        if save_output:
+            rank_genes_groups_logreg.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_logreg.csv")
 
         #########################  logical reggression
 
@@ -257,7 +273,8 @@ def rank_genes_obscat1_vs_obscat2(adata,output_dir="./adata_output/",output_pref
         rank_genes_groups_t_test=pd.DataFrame(
             {group + '_' + key[:16]: result[key][group]
             for group in groups for key in ['names', 'scores','pvals','pvals_adj','logfoldchanges']})
-        rank_genes_groups_t_test.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_t_test.csv")    
+        if save_output:
+            rank_genes_groups_t_test.to_csv(dataset_tables_output_directory+output_prefix+obs_key+'_'+obscat1+'_VS_'+obscat2+'_'+"rank_genes_groups_t_test.csv")    
     return rank_genes_groups_wilcox, rank_genes_groups_logreg,rank_genes_groups_t_test    
 
 
@@ -670,4 +687,304 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
     ############################## t_test regression test GSEA END
     return
     
+
+def filter_obs(data: Union[AnnData,# MuData
+                           ], var: Union[str, Sequence[str]], func: Optional[Callable] = None
+) -> None:
+    """
+    Filter observations (samples or cells) in-place
+    using any column in .obs or in .X.
+
+    Parameters
+    ----------
+    data: AnnData or MuData
+            AnnData or MuData object
+    var: str or Sequence[str]
+            Column name in .obs or in .X to be used for filtering.
+            Alternatively, obs_names can be provided directly.
+    func
+            Function to apply to the variable used for filtering.
+            If the variable is of type boolean and func is an identity function,
+            the func argument can be omitted.
+    """
+        # https://muon.readthedocs.io/en/latest/api/generated/muon.pp.filter_obs.html
+    from typing import Union, Sequence, Optional, Callable
+    from anndata import AnnData
+
+    if data.is_view:
+        raise ValueError(
+            "The provided adata is a view. In-place filtering does not operate on views."
+        )
+    if data.isbacked:
+        if isinstance(data, AnnData):
+            warnings.warn(
+                "AnnData object is backed. The requested subset of the matrix .X will be read into memory, and the object will not be backed anymore."
+            )
+        else:
+            warnings.warn(
+                "MuData object is backed. The requested subset of the .X matrices of its modalities will be read into memory, and the object will not be backed anymore."
+            )
+
+    if isinstance(var, str):
+        if var in data.obs.columns:
+            if func is None:
+                if data.obs[var].dtypes.name == "bool":
+
+                    def func(x):
+                        return x
+
+                else:
+                    raise ValueError(f"Function has to be provided since {var} is not boolean")
+            obs_subset = func(data.obs[var].values)
+        elif var in data.var_names:
+            obs_subset = func(data.X[:, np.where(data.var_names == var)[0]].reshape(-1))
+        else:
+            raise ValueError(
+                f"Column name from .obs or one of the var_names was expected but got {var}."
+            )
+    else:
+        if func is None:
+            if np.array(var).dtype == bool:
+                obs_subset = np.array(var)
+            else:
+                obs_subset = data.obs_names.isin(var)
+        else:
+            raise ValueError("When providing obs_names directly, func has to be None.")
+
+    # Subset .obs
+    data._obs = data.obs[obs_subset]
+    data._n_obs = data.obs.shape[0]
+
+    # Subset .obsm
+    for k, v in data.obsm.items():
+        data.obsm[k] = v[obs_subset]
+
+    # Subset .obsp
+    for k, v in data.obsp.items():
+        data.obsp[k] = v[obs_subset][:, obs_subset]
+
+    if isinstance(data, AnnData):
+        # Subset .X
+        if data._X is not None:
+            try:
+                data._X = data.X[obs_subset, :]
+            except TypeError:
+                data._X = data.X[np.where(obs_subset)[0], :]
+                # For some h5py versions, indexing arrays must have integer dtypes
+                # https://github.com/h5py/h5py/issues/1847
+
+        if data.isbacked:
+            data.file.close()
+            data.filename = None
+
+        # Subset layers
+        for layer in data.layers:
+            data.layers[layer] = data.layers[layer][obs_subset, :]
+
+        # Subset raw
+        if data.raw is not None:
+            data.raw._X = data.raw.X[obs_subset, :]
+            data.raw._n_obs = data.raw.X.shape[0]
+
+    else:
+        # filter_obs() for each modality
+        for m, mod in data.mod.items():
+            obsmap = data.obsmap[m][obs_subset]
+            obsidx = obsmap > 0
+            filter_obs(mod, mod.obs_names[obsmap[obsidx] - 1])
+            maporder = np.argsort(obsmap[obsidx])
+            nobsmap = np.empty(maporder.size)
+            nobsmap[maporder] = np.arange(1, maporder.size + 1)
+            obsmap[obsidx] = nobsmap
+            data.obsmap[m] = obsmap
+
+    return
+
+def label_cells_by_single_gene_expression(adata, gene_name1, min_n_counts1, use_raw=True, use_percentile=False,):
+    if use_percentile:
+        percentile1=min_n_counts1
+        if use_raw:
+            min_n_counts1=np.percentile(adata[:, [gene_name1]].X.toarray()[:,0][adata[:, [gene_name1]].X.toarray()[:,0]>0], percentile1)
+        else:
+            min_n_counts1=np.percentile(adata.raw[:, [gene_name1]].X.toarray()[:,0][adata.raw[:, [gene_name1]].X.toarray()[:,0]>0], percentile1)
+        print(f"using {percentile1} percentile of {gene_name1} expressing cells ....  min_n_counts1: {min_n_counts1:.2f}")
+    else:
+        print(f"using explicit count min  .... {gene_name1} min_n_counts1: {min_n_counts1}")
+
+    # Ensure the gene name exists in the  data
+    if gene_name1 in adata.var_names:
+        if use_raw:
+            gene1_pos=adata.raw[:, [gene_name1]].X.toarray()[:,0]>min_n_counts1
+        else:
+            gene1_pos=adata[:, [gene_name1]].X.toarray()[:,0]>min_n_counts1
+        # make list of cell annotations
+        cell_pos_result=[]
+        for row in range(gene1_pos.shape[0]): # for each cell
+            row_result=""
+            if gene1_pos[row]==True:
+                row_result=gene_name1 + "_pos"
+            else:
+                row_result=f'{gene_name1}_neg_min_{min_n_counts1:.2f}_counts'
+            cell_pos_result.append(row_result)
+        adata.obs[gene_name1 + "_pos"]=cell_pos_result
+        # sort the categories in adata.obs[gene_name1 + "_pos"]
+        adata.obs[gene_name1 + "_pos"]=pd.Categorical(adata.obs[gene_name1 + "_pos"],categories=[gene_name1 + "_pos",f'{gene_name1}_neg_min_{min_n_counts1:.2f}_counts'])
+    else:
+        print(f"Gene {gene_name1} not found in  data.")
+    return adata
+
+
+def label_cells_by_double_gene_expression(adata, gene_name1, gene_name2,min_n_counts1,min_n_counts2, use_raw=True, use_percentile=False,):
+    '''
+    annotate cells with marker genes
+    adata: anndata objects
+    gene_name1: string, name of the gene
+    gene_name2: string, name of the gene
+    if use_raw=True, then use adata.raw to get the gene expression values
+    if use_raw=False, then use adata to get the gene expression values
+    if use_percentile=True, then min_n_counts1 and min_n_counts2 are percentiles of expressing cells
+    min_n_counts1: int, minimum counts to be considered positive for gene_name1
+    min_n_counts2: int, minimum counts to be considered positive for gene_name2
+    # if gene_name1 and gene_name2 are both greater than to min_n_counts1 and min_n_counts2, then the cell is annotated as gene_name1 + "_pos" + "_" + gene_name2 + "_pos"
+    # if gene_name1 is greater  than min_n_counts1, then the cell is annotated as gene_name1 + "_pos"
+    # if gene_name2 is greater than min_n_counts2, then the cell is annotated as gene_name2 + "_pos"
     
+    greater  than
+    #>min_n_counts1
+    '''
+    if use_percentile:
+        percentile1=min_n_counts1
+        percentile2=min_n_counts2
+        if use_raw:
+            min_n_counts1=np.percentile(adata[:, [gene_name1]].X.toarray()[:,0][adata[:, [gene_name1]].X.toarray()[:,0]>0], percentile1)
+            min_n_counts2=np.percentile(adata[:, [gene_name2]].X.toarray()[:,0][adata[:, [gene_name2]].X.toarray()[:,0]>0], percentile2)
+        else:
+            min_n_counts1=np.percentile(adata.raw[:, [gene_name1]].X.toarray()[:,0][adata.raw[:, [gene_name1]].X.toarray()[:,0]>0], percentile1)
+            min_n_counts2=np.percentile(adata.raw[:, [gene_name2]].X.toarray()[:,0][adata.raw[:, [gene_name2]].X.toarray()[:,0]>0], percentile2)
+        print(f"using {percentile1} percentile of {gene_name1} expressing cells ....  min_n_counts1: {min_n_counts1:.2f}")
+        print(f"using {percentile2} percentile of {gene_name2} expressing cells ....  min_n_counts2: {min_n_counts2:.2f}")
+    else:
+        print(f"using explicit count min  .... {gene_name1} min_n_counts1: {min_n_counts1}, {gene_name2} min_n_counts2: {min_n_counts2}")
+
+    # Ensure the gene name exists in the raw data
+    if gene_name1 and gene_name2 in adata.var_names:
+        if use_raw:
+            gene1_pos=adata.raw[:, [gene_name1]].X.toarray()[:,0]>min_n_counts1
+            gene2_pos=adata.raw[:, [gene_name2]].X.toarray()[:,0]>min_n_counts2
+        else:
+            gene1_pos=adata[:, [gene_name1]].X.toarray()[:,0]>min_n_counts1
+            gene2_pos=adata[:, [gene_name2]].X.toarray()[:,0]>min_n_counts2
+        cell_gene_array_all=np.hstack([gene1_pos[:, None],gene2_pos[:, None]])
+        cell_pos_result=[]
+        for row in range(cell_gene_array_all.shape[0]): # for each cell
+            row_result=""
+            if cell_gene_array_all[row,:].any()==False: 
+                row_result=f'{gene_name1}_neg_min_{min_n_counts1:.2f}_{gene_name2}_neg_min_{min_n_counts2:.2f}_counts'
+            elif cell_gene_array_all[row,:].all()==True:
+                row_result=gene_name1 + "_pos" + "_" + gene_name2 + "_pos" 
+            elif cell_gene_array_all[row,0]==True:
+                row_result=gene_name1 + "_pos_only"
+            elif cell_gene_array_all[row,1]==True: 
+                row_result=gene_name2 + "_pos_only"
+            cell_pos_result.append(row_result)
+        adata.obs[gene_name1 + "_pos" + "_" + gene_name2 + "_pos"]=cell_pos_result
+        # sort the categories in adata.obs[gene_name1 + "_pos" + "_" + gene_name2 + "_pos"]
+        adata.obs[gene_name1 + "_pos" + "_" + gene_name2 + "_pos"]=pd.Categorical(adata.obs[gene_name1 + "_pos" + "_" + gene_name2 + "_pos"],
+                                                                                  categories=[
+                                                                                  gene_name1 + "_pos" + "_" + gene_name2 + "_pos",
+                                                                                  gene_name1 + "_pos_only",
+                                                                                  gene_name2 + "_pos_only",
+                                                                                # gene_name1 + "_neg_min_" +str(min_n_counts1)+  "_" + gene_name2 + "_neg_min_" +str(min_n_counts2)+ "_counts",])
+                                                                                f'{gene_name1}_neg_min_{min_n_counts1:.2f}_{gene_name2}_neg_min_{min_n_counts2:.2f}_counts'
+                                                                                ])
+        ### add a color palette for the categories in adata.obs[gene_name1 + "_pos" + "_" + gene_name2 + "_pos"]
+        #adata.uns[gene_name1 + "_pos" + "_" + gene_name2 + "_pos_colors"]= ["#FF0000","#00FF00","#0000FF","#000000"]#sc.pl.palettes.vega_10
+        adata.uns[gene_name1 + "_pos" + "_" + gene_name2 + "_pos_colors"]= sc.pl.palettes.vega_10
+    else:
+        print(f"Gene {gene_name1} or {gene_name2} not found in raw data.")
+    return adata
+
+
+def average_feature_expression(adata, groupby_key, layer=None, use_raw=False, log1p=False, zscore=False, subtract_mean=True):
+    """
+    Calculate the average feature expression for observations sharing the same metadata.
+
+    Parameters:
+    adata (AnnData): AnnData object containing gene expression data.
+    groupby_key (str): Key in adata.obs to group by (e.g., cell type).
+    layer (str, optional): Key of the layer in adata to use for the expression data. If None, uses adata.X.
+    use_raw (bool, optional): If True, use adata.raw for the expression data. Default is False.
+    log1p (bool, optional): If True, apply log1p transformation to the data before averaging. Default is False.
+    zscore (bool, optional): If True, apply Z-score scaling to the data before averaging. Default is False.
+    subtract_mean (bool, optional): If True, subtract the mean from each feature. Default is False.
+
+    Returns:
+    pd.DataFrame: DataFrame with average feature expression, where rows are groups and columns are features (genes).
+    """
+    import pandas as pd
+    import numpy as np
+    import scipy.sparse as sp
+    from sklearn.preprocessing import StandardScaler
+
+    # Select the appropriate data matrix
+    if use_raw:
+        if layer is not None:
+            raise ValueError("Cannot specify a layer when use_raw is True")
+        data_matrix = adata.raw.X
+        var_names = adata.raw.var_names
+    else:
+        if layer:
+            data_matrix = adata.layers[layer]
+        else:
+            data_matrix = adata.X
+        var_names = adata.var_names
+
+    # Apply log1p transformation if specified
+    if log1p:
+        if sp.issparse(data_matrix):
+            data_matrix = data_matrix.log1p()
+        else:
+            data_matrix = np.log1p(data_matrix)
+    # Apply Z-score scaling if specified
+    if zscore:
+        # Subtract mean if specified
+        if subtract_mean:
+            if sp.issparse(data_matrix):
+                mean = np.array(data_matrix.mean(axis=0)).flatten()
+                data_matrix = data_matrix - mean
+            else:
+                mean = np.mean(data_matrix, axis=0)
+                data_matrix = data_matrix - mean
+        scaler = StandardScaler(with_mean=not sp.issparse(data_matrix))
+        data_matrix = np.asarray(data_matrix)
+        data_matrix = scaler.fit_transform(data_matrix)
+
+    # Extract group labels and unique groups
+    group_labels = adata.obs[groupby_key]
+    unique_groups = adata.obs[groupby_key].cat.categories  # Preserve the order of categories
+
+    # Initialize an empty list to hold the average expressions
+    avg_expression_list = []
+
+    # Iterate over each group to calculate the mean expression
+    for group in unique_groups:
+        group_indices = np.where(group_labels == group)[0]
+        group_data = data_matrix[group_indices, :]
+
+        if sp.issparse(group_data):
+            group_mean = group_data.mean(axis=0).A1  # Use .A1 to get a flat array from sparse matrix
+        else:
+            group_mean = np.mean(group_data, axis=0)
+        
+        # Ensure the group_mean is a flat 1D array
+        group_mean = np.asarray(group_mean).flatten()
+
+        # Debugging step: Print the shape of group_mean
+        #print(f"Group: {group}, group_mean shape: {group_mean.shape}")
+
+        avg_expression_list.append(group_mean.flatten())
+
+    # Convert the list to a DataFrame
+    avg_expression_df = pd.DataFrame(avg_expression_list, index=unique_groups, columns=var_names)
+
+    return avg_expression_df

@@ -1,3 +1,7 @@
+# Convenience method for computing the size of objects
+def print_size_in_MB(x):
+    print('{:.3} MB'.format(x.__sizeof__()/1e6))
+
 def df_loadings_ordered_byPC(adata,ascending=False,
 save_table=False,output_dir="./adata_output/",output_prefix="adata_",#**parameters
                             ):
@@ -687,9 +691,10 @@ def GSEA_enrichr_all_clusters(output_dir="./adata_output/",output_prefix="adata_
     ############################## t_test regression test GSEA END
     return
     
-
+from typing import Union, Sequence, Optional, Callable
+from anndata import AnnData
 def filter_obs(data: Union[AnnData,# MuData
-                           ], var: Union[str, Sequence[str]], func: Optional[Callable] = None
+   ], var: Union[str, Sequence[str]], func: Optional[Callable] = None
 ) -> None:
     """
     Filter observations (samples or cells) in-place

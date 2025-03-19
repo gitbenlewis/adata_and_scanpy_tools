@@ -1,4 +1,4 @@
-# adata_and_scanpy_tools
+# single_cell_python_tools
 Mostly scanpy wrappers and tools that use adata objects to stream line single cell analysis 
 
 # Getting started
@@ -9,7 +9,7 @@ clone this repo into into to the directory where you keep your cloned python pac
 
 ```
 cd home/ubuntu/projects/github_repos
-git clone https://github.com/megadesk/adata_and_scanpy_tools.git
+git clone https://github.com/megadesk/single_cell_python_tools.git
 ```
 
 ## Code to add to the start of a jupyter notebook in order to run the package
@@ -24,16 +24,16 @@ if repo_parent_dir not in sys.path:
     sys.path.append(repo_parent_dir)
 
 # import the package
-import adata_and_scanpy_tools as adsctl
+import single_cell_python_tools as sctl
 
 ``` 
 ## Directory structure
 
 I recommend placing all your github repos (packages and analysis_project_repos) in the same parent directory that way you can use relative paths to access packages from your analysis_project_repos.\
 This way the same notebook will work on your aws enviroment as as well as your local envirmoment ( without changing path variables).\
-For example adding, adding '../../' to your sys.path from any of the notebooks in the example direcotry tree below will give you access to both the adata_and_scanpy_tools and the second_favorite_package_repo_directory regardless of where the "github_repos" is located.
+For example adding, adding '../../' to your sys.path from any of the notebooks in the example direcotry tree below will give you access to both the single_cell_python_tools and the second_favorite_package_repo_directory regardless of where the "github_repos" is located.
 > github_repos
->> adata_and_scanpy_tools
+>> single_cell_python_tools
 >> 
 >> second_favorite_package_repo_directory
 >> 
@@ -50,37 +50,37 @@ For example adding, adding '../../' to your sys.path from any of the notebooks i
 
 
 
-# adata_and_scanpy_tools package functions
+# single_cell_python_tools package functions
 
 ## Getting start will the package functions
 ### Check the doc strings of the functions for more info on each
 
 `print(functionOrClass.__doc__) #(double underscores)`
 
-`print(adsctl.pp.basic_filitering.__doc__)`
+`print(sctl.pp.basic_filitering.__doc__)`
 
-`print(adsctl.pp.annotate_n_view_adata_raw_counts.__doc__)`
+`print(sctl.pp.annotate_n_view_adata_raw_counts.__doc__)`
 
-`print(adsctl.pp.filter_cells_by_anotated_QC_gene.__doc__)`
+`print(sctl.pp.filter_cells_by_anotated_QC_gene.__doc__)`
 
-`print(adsctl.pp.remove_genes.__doc__)`
+`print(sctl.pp.remove_genes.__doc__)`
 
-`print(adsctl.pp.process2scaledPCA.__doc__)`
+`print(sctl.pp.process2scaledPCA.__doc__)`
 
-`print(adsctl.pp.leiden_clustering.__doc__)`
+`print(sctl.pp.leiden_clustering.__doc__)`
 
-`print(adsctl.pl.silhouette_score_n_plot.__doc__)`
+`print(sctl.pl.silhouette_score_n_plot.__doc__)`
 
 
 ### latest update is a modified version of scanpy's ingest funciton
-`print(adsctl.tl.ingest_verbose.__doc__)`
+`print(sctl.tl.ingest_verbose.__doc__)`
 
 
 
 # most usefull  (most usefull starting point)
 ## check out the eample notebook folders
 * preprocessing_PBMC3k_example_nbs
-   * adsctl_gex_class_preprocessing_PBMC3k.ipynb # single class object for preprocessing
+   * sctl_gex_class_preprocessing_PBMC3k.ipynb # single class object for preprocessing
    * adsctl_functions_preprocessing_PBMC3k_.ipynb # multiple functions preprocess an adata object 
       * more memory efficient
 
@@ -89,9 +89,9 @@ For example adding, adding '../../' to your sys.path from any of the notebooks i
 # I'll add more to read me later
 
 
-## Subpackage - adata_and_scanpy_tools - preprocessing - ANsc.pp.
+## Subpackage - single_cell_python_tools - preprocessing - ANsc.pp.
 
-`adsctl.pp.basic_filitering()`
+`sctl.pp.basic_filitering()`
 ```
 basic_filitering(adata,
                      filter_cells_min_counts=0,
@@ -102,7 +102,7 @@ basic_filitering(adata,
 ```
 
 
-`adsctl.pp.annotate_QC_genes(adata)`
+`sctl.pp.annotate_QC_genes(adata)`
 
 ```
 annotate the group of QC genes
@@ -117,7 +117,7 @@ return adata
 ```
 
 
-`adsctl.pp.calculate_qc_metrics(adata)`
+`sctl.pp.calculate_qc_metrics(adata)`
 ```
 calculate_qc_metrics
 # add code to check if genes already annotated 
@@ -129,7 +129,7 @@ sc.pp.calculate_qc_metrics(adata, qc_vars=['malat1'], percent_top=None, log1p=Fa
 return adata
 ```
 
-`adsctl.pp.plot_QC_metrics_scatter(adata)`
+`sctl.pp.plot_QC_metrics_scatter(adata)`
 ```
 #### code 
 figQC, (ax1,ax2,ax3,ax4,ax5) = plt.subplots(1 ,5,figsize=(20,4), gridspec_kw={'wspace':0.9})
@@ -140,7 +140,7 @@ sc.pl.scatter(adata, x='total_counts', y='pct_counts_malat1',ax=ax4, show=False)
 sc.pl.scatter(adata, x='total_counts', y='pct_counts_hb',ax=ax5, show=False) #percent HB counts vs total counts
 ```
 
-`adsctl.pp.plot_QC_metrics_violin(adata)`
+`sctl.pp.plot_QC_metrics_violin(adata)`
 ```
 #### code 
 fig1, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(1 ,6,figsize=(20,4), gridspec_kw={'wspace':0.9})
@@ -152,7 +152,7 @@ sc.pl.violin(adata, [ 'pct_counts_malat1'], jitter=0.4,ax=ax5, show=False) # hem
 sc.pl.violin(adata, [ 'pct_counts_hb'], jitter=0.4,ax=ax6, show=False) # hemoglobin genes.  
 ```
 
-`adsctl.pp.plot_qc_metrics(adata)`
+`sctl.pp.plot_qc_metrics(adata)`
 ```
 plot_qc_metrics of Annotated technical gene groups  and top 20 highly expressed
 #### code 
@@ -161,7 +161,7 @@ plot_QC_metrics_scatter(adata)
 sc.pl.highest_expr_genes(adata, n_top=20, )
 ```
 
-`adsctl.pp.annotate_n_view_adata_raw_counts(adata)`
+`sctl.pp.annotate_n_view_adata_raw_counts(adata)`
 ```
 Annotate technical gene groups  and calculate qc metrics
 #### code 
@@ -171,7 +171,7 @@ plot_qc_metrics(adata)
 ```
 
 
-`adsctl.pp.filter_cells_by_anotated_QC_gene()`
+`sctl.pp.filter_cells_by_anotated_QC_gene()`
 ```
 filter_cells_by_anotated_QC_gene(adata,
                                     filter_ncount=True,
@@ -192,7 +192,7 @@ filter_cells_by_anotated_QC_gene(adata,
                                     )
 ```
 
-`adsctl.pp.remove_genes()`
+`sctl.pp.remove_genes()`
 ```
 remove_genes(adata,
                 remove_MALAT1=False,
@@ -204,7 +204,7 @@ remove_genes(adata,
                 )
 ```
 
-`adsctl.pp.process2scaledPCA()`
+`sctl.pp.process2scaledPCA()`
 ```
  process2scaledPCA(adata,
                    normalize_total_target_sum=1e4,logarithmize=True,
@@ -216,7 +216,7 @@ remove_genes(adata,
                       **parameters)
 ```
 
-`adsctl.pp.leiden_clustering()`
+`sctl.pp.leiden_clustering()`
 ```
 #### code
 leiden_clustering(adata, number_of_neighbors=10,number_of_PC=40, leiden_res=1,key_added='leiden', **parameters)
@@ -228,11 +228,11 @@ sc.pl.umap(adata, color=[key_added] )
 
 
 
-## Subpackage - adata_and_scanpy_tools - tools - ANsc.tl.
+## Subpackage - single_cell_python_tools - tools - sctl
 
 ### latest update is a modified version of scanpy's injest funciton
 
-`adsctl.tl.ingest_verbose(adata, adata_ref, obs=['adata_ref_obs1', 'adata_ref_obs2'])`
+`sctl.tl.ingest_verbose(adata, adata_ref, obs=['adata_ref_obs1', 'adata_ref_obs2'])`
 ```
 hello i modified this ingest
 
@@ -256,12 +256,12 @@ import sys
 if repo_parent_dir not in sys.path:
    sys.path.append(repo_parent_dir)
 
-import adata_and_scanpy_tools as adsctl
-from adata_and_scanpy_tools.adsctl_gex_class import *
+import single_cell_python_tools as adsctl
+from single_cell_python_tools.sctl_gex_class import *
 # then this is the function call to ingest_verbose all arguements are the same as standard ingest 
 # ingest verbose just has additional obs columns outputs
 
-adsctl.tl.ingest_verbose(adata, adata_ref, obs=['adata_ref_obs1', 'adata_ref_obs2'])
+sctl.tl.ingest_verbose(adata, adata_ref, obs=['adata_ref_obs1', 'adata_ref_obs2'])
 ################# code that was modified
 def to_adata(self, inplace=False):
    """\
@@ -314,20 +314,20 @@ def to_adata(self, inplace=False):
 
 
 
-## Subpackage - adata_and_scanpy_tools - plots - adsctl.pl.
+## Subpackage - single_cell_python_tools - plots - sctl.pl.
 
-`adsctl.pl.silhouette_score_n_plot(adata,leiden_res='unk',**parameters)`
+`sctl.pl.silhouette_score_n_plot(adata,leiden_res='unk',**parameters)`
 ```
-adsctl.pl.silhouette_score_n_plot(adata,parameters,leiden_res='unk'):
+sctl.pl.silhouette_score_n_plot(adata,parameters,leiden_res='unk'):
 > assumes ledien clusteirng to subset cells
 > uses X_pca for silhoutte_scores
 samples_silhoutte_scores=silhouette_samples(adata.obsm['X_pca'], adata.obs['leiden']
 
 ```
 
-`adsctl.pl.plot_batch_obs_key_of_obs_key2(adata,savefig=False,output_dir='./project/',output_prefix="dataset_",batch_obs_key='batch',obs_key2="leiden",figsize=(10,4),flavor="pct_count")`
+`sctl.pl.plot_batch_obs_key_of_obs_key2(adata,savefig=False,output_dir='./project/',output_prefix="dataset_",batch_obs_key='batch',obs_key2="leiden",figsize=(10,4),flavor="pct_count")`
 ```
-adsctl.pl.plot_batch_obs_key_of_obs_key2(adata,savefig=False,output_dir='./project/',output_prefix="dataset_",batch_obs_key='batch',obs_key2="leiden",figsize=(10,4),flavor="pct_count")
+sctl.pl.plot_batch_obs_key_of_obs_key2(adata,savefig=False,output_dir='./project/',output_prefix="dataset_",batch_obs_key='batch',obs_key2="leiden",figsize=(10,4),flavor="pct_count")
 makes two side by side bar charts, each bar is a batch_obs_key='batch category and each bar is stacked and colored by obs_key2="leiden"
 left bar chart is fraction on y -axis 
 right  bar chart is obs/cell count on y -axis 
@@ -337,9 +337,9 @@ flavor="count"  >>> only count chart
 
 ```
 
-`adsctl.pl.plot_percent_obs_key2_per_batch_obs_key(adata,savefig=False,output_dir='./project/',output_prefix="dataset_",batch_obs_key='batch',obs_key2="leiden",figsize=(10,4))`
+`sctl.pl.plot_percent_obs_key2_per_batch_obs_key(adata,savefig=False,output_dir='./project/',output_prefix="dataset_",batch_obs_key='batch',obs_key2="leiden",figsize=(10,4))`
 ```
-adsctl.pl.plot_percent_obs_key2_per_batch_obs_key(adata,savefig=False,output_dir='./project/',output_prefix="dataset_",batch_obs_key='batch',obs_key2="leiden",figsize=(10,4)
+sctl.pl.plot_percent_obs_key2_per_batch_obs_key(adata,savefig=False,output_dir='./project/',output_prefix="dataset_",batch_obs_key='batch',obs_key2="leiden",figsize=(10,4)
 This produce one column of individual bar charts (one chart for each catagory in batch_obs_key='batch'") # batch_obs_key="sample_ID is good to use
 each bar chart show percentage of cells in "batch" assigned to obs_key2="leiden"
 ```
@@ -347,11 +347,11 @@ each bar chart show percentage of cells in "batch" assigned to obs_key2="leiden"
 
 
 
-# Stand alone module - adsctl_gex class- adata_and_scanpy_tools - adsctl_gex - adsctl.adsctl_gex
+# Stand alone module - sctl_gex class- single_cell_python_tools - sctl_gex - sctl.sctl_gex
 
-`adsctl_gex(adata,**parameters)`
+`sctl_gex(adata,**parameters)`
 * see the notebook 
-   * adsctl_gex_class_preprocessing_PBMC3k.ipynb # single class object for preprocessing
+   * sctl_gex_class_preprocessing_PBMC3k.ipynb # single class object for preprocessing
 
 
 # more coming soon

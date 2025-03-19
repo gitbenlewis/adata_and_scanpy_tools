@@ -9,9 +9,6 @@ import matplotlib.pyplot as plt
 ### annotate_QC_genes and calculate_qc_metrics functions
 def annotate_QC_genes(adata,organism = 'human' ,**parameters):
     """ 
-    annotate the group of QC genes
-    ### double HB gene annoation works.... maybe just give it a list of genes
-    #### code 
     if organism == 'human' or None:
         print ('organism is human, annotating human genes')
         adata.var['mt'] = adata.var_names.str.startswith("MT-")  # mitochondrial genes as 'mt'
